@@ -3,19 +3,16 @@ import cv2
 import requests
 from ultralytics import YOLO
 import json
+from datetime import datetime
 
-# YOLOv8モデルの読み込み（適切なモデルパスに置き換えてください）
+# YOLOv8モデルの読み込み
 model = YOLO("yolov8n.pt")  # "yolov8n.pt"の部分はご使用のモデルファイルに合わせて変更してください
 
 # HTTP送信先の設定
-url = "ここにIPアドレス"  # IPアドレスとエンドポイントを指定
-
-# # 任意の動画ファイルを指定してキャプチャ開始
-# video_path = "video_path.mp4"  # 読み込みたい動画ファイルのパスに置き換え
-# cap = cv2.VideoCapture(video_path)
+url = "ここにIPアドレス"
 
 # カメラから映像をキャプチャ
-cap = cv2.VideoCapture(0)  # 0は通常デフォルトのカメラを指します
+cap = cv2.VideoCapture(0)
 
 frame_counter = 0
 last_send_time = time.time()
@@ -25,8 +22,8 @@ while cap.isOpened():
     if not ret:
         break
         
-    # 5フレームに1回だけYOLOの推論を実行
-    if frame_counter % 10 == 0:
+    # 30フレームに1回推論を実行
+    if frame_counter % 30 == 0:
     
         # YOLOv8で画像を推論
         results = model(frame, verbose=False)
@@ -42,17 +39,15 @@ while cap.isOpened():
                     "confidence": confidence
                 })
 
-        # 10秒ごとにデータを送信
         current_time = time.time()
         if current_time - last_send_time >= 10:
             if human_data:
                 try:
-                    # 検出された人数をcurrent_countに設定
+                    # 検出された人数をcountに設定
                     data = {
-                        "id": 1,  # 固定ID
-                        "name": "コンビニ前",  # 固定名
-                        "max_capacity": 30,  # 固定の最大収容人数
-                        "current_count": len(human_data)  # 検出された人数
+                        "camera_id": "cam01",  # カメラID
+                        "timestamp": datetime.now().isoformat(),
+                        "count": len(human_data)  # 検出された人数
                     }
                     # データをHTTP POSTリクエストで送信
                     response = requests.post(url, json=data)
